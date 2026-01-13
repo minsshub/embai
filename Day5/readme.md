@@ -1,4 +1,4 @@
-# Collecting real data and performing some basic ML mode (Day 5.2)
+# Collecting real data and performing some basic ML modeling (Day 5.2)
 
 ## Task 1 – Raw IMU Data Collection & Analysis
 
@@ -40,6 +40,15 @@ This program loads raw IMU data and produces both:
 1) visual analysis plots  
 2) time-window based features (motion descriptors)
 
+### (Preprocessing) Timestamp cleaning
+While loading the raw IMU log, some values in the `Timestamp` column were stored as strings or contained invalid entries, which caused errors during plotting and time-based feature extraction.
+To fix this, timestamps were converted into numeric format and invalid rows were removed.
+
+```python
+df['Timestamp'] = pd.to_numeric(df['Timestamp'], errors='coerce')
+df = df.dropna(subset=['Timestamp'])
+```
+
 ### (a) Examples of feature extraction
 - **SMV (Signal Magnitude Vector)**  
   SMV = √(ax² + ay² + az²)  
@@ -70,77 +79,68 @@ The analysis is useful because:
 
 ## Task 2 – Smooth IMU Data Collection & Roll Estimation
 
-## 1) Process of collecting smooth IMU data
-**Code used:** `IMU_SD_ST_AGEQ.ino`  
-**Action:** slow-moving roll motion (deliberately slow to reduce disturbance)
+### 1) Process of collecting smooth IMU data
+**Code used:** `IMU_SD_ST_AGEQ.ino`
 
-### Procedure
+**Action**
+- Perform a slow-moving roll motion (slow motion reduces disturbance and improves stability)
+
+**Procedure**
 1. Upload `IMU_SD_ST_AGEQ.ino` to M5Stack Core2.
-2. Perform slow roll movement while the device records.
-3. Data is saved into SD card (ex: `imu_smooth.csv`).
+2. Perform slow roll motion while the device is recording.
+3. IMU signals are saved as smooth dataset CSV (e.g., `imu_smooth.csv`).
 
----
+### 2) What does the program do? (IMU_SD_ST_AGEQ.ino)
+This code records IMU signals at a fixed rate and outputs a stable dataset for roll estimation:
+- IMU sampling at constant rate (e.g., 100 Hz)
+- smoothing / noise suppression
+- preparation for roll estimation using accel + gyro fusion signals
+- produces smooth dataset suitable for regression modeling
 
-## 2) What does the program do? (IMU_SD_ST_AGEQ.ino)
-This program records IMU signals and performs processing for stable roll estimation:
-- sensor sampling at fixed rate (ex: 100 Hz)
-- smoothing (moving average / low-noise handling)
-- IMU fusion preparation
-- outputs a “smooth dataset” that is more suitable for roll regression modeling
+### 3) Ground-truth evaluation (How is ground-truth evaluated?)
+Ground-truth roll angle is obtained from **device fusion output** (on-board sensor fusion algorithm).
+This fusion uses accelerometer + gyroscope to compute device orientation.
 
----
-
-## 3) Ground-truth evaluation: How is ground-truth evaluated?
-Ground-truth roll angle is obtained from **device fusion output** (on-board sensor fusion algorithm).  
-This output combines accelerometer + gyroscope information to compute orientation.  
-Therefore in this experiment:
-
+Therefore:
 - **Ground Truth (GT):** roll from device fusion
-- **Prediction:** roll estimated by regression algorithms using IMU features
+- **Prediction:** roll estimated by regression models using IMU data/features
 
----
-
-## 4) What is R2 metric?
-R2 (coefficient of determination) measures how well a regression model predicts the target:
+### 4) What is R2 metric?
+R2 (coefficient of determination) measures regression prediction quality.
 
 - **R2 = 1.0:** perfect prediction
-- **R2 = 0.0:** model explains none of the variance
-- **R2 < 0:** worse than predicting mean value
+- **R2 = 0.0:** no explanatory power
+- **R2 < 0:** worse than predicting the mean
 
-In this task, R2 is used to compare the roll estimation accuracy against ground truth.
+In this task, R2 is used to compare roll estimation accuracy against ground truth.
 
----
+### 5) Regression algorithms used (description)
 
-## 5) Regression algorithms used (Description)
+**(1) Linear Regression**
+- Assumes roll is a linear combination of features (ax, ay, az)
+- Fast and interpretable, but limited for nonlinear mapping
 
-### (1) Linear Regression
-Assumes roll is a linear combination of accelerometer features (ax, ay, az).
-- fast, interpretable, but limited for nonlinear mapping
+**(2) Non-linear Regression (Polynomial Regression)**
+- Expands features using polynomial terms
+- Models nonlinear roll relationship better than linear regression
 
-### (2) Non-linear Regression (Polynomial Regression)
-Expands features into polynomial terms to model nonlinear roll relationships.
-- captures curvature/nonlinearity better than linear regression
+**(3) Decision Tree Regression**
+- Uses rule-based splitting (if-else thresholds)
+- Interpretable but may overfit and produce less smooth outputs
 
-### (3) Decision Tree Regression
-Uses rule-based splitting (if-else thresholds) to predict roll.
-- interpretable but can overfit and show limited smoothness
+**(4) Random Forest Regression**
+- Ensemble of decision trees (averaging)
+- Reduces overfitting and improves generalization
 
-### (4) Random Forest Regression
-Ensemble of many decision trees (averaging predictions).
-- reduces overfitting and improves generalization
+**(5) SVM Regression (RBF Kernel)**
+- Learns nonlinear mapping using kernel trick
+- Strong performance for complex relations but needs tuning
 
-### (5) SVM Regression (RBF Kernel)
-Uses kernel trick to model nonlinear relationship.
-- strong performance on complex manifolds, requires hyperparameter tuning
+**(6) MLP Neural Network Regression**
+- Feedforward neural network for nonlinear approximation
+- Flexible and strong but depends on training stability
 
-### (6) MLP Neural Network Regression
-Feedforward neural network that learns highly nonlinear mapping.
-- flexible and powerful but needs training stability
-
----
-
-## 6) Performance comparison (R2 scores)
-The following R2 scores were obtained:
+### 6) Performance comparison (R2 scores)
 
 | Model | R2 Score |
 |------|----------|
@@ -152,22 +152,18 @@ The following R2 scores were obtained:
 | MLP NN Regression | 0.9998 |
 | Analytic / Fusion reference | 0.9998 |
 
----
-
-## 7) Which algorithm is the best?
-Best performance (highest R2) was achieved by:
-
+### 7) Which algorithm is the best?
+The best performance (highest R2) was achieved by:
 - **Non-linear (Polynomial) Regression: R2 = 0.9998**
 - **MLP Neural Network Regression: R2 = 0.9998**
 
-Both methods match ground truth almost perfectly.
+Both methods match the ground-truth almost perfectly.
 
-**Conclusion:** For smooth roll estimation under slow-motion conditions, Polynomial Regression and MLP NN give the best prediction accuracy.
+**Conclusion:** For smooth roll estimation under slow-motion conditions, Polynomial Regression and MLP NN produce the best prediction accuracy.
 
----
 
-# Final Summary
-- Task 1 successfully collected raw IMU data and performed signal analysis + feature extraction.
-- Task 2 successfully collected smooth IMU data and evaluated multiple regression models for roll estimation.
-- R2 metric was used to compare models against ground truth (device fusion roll).
-- Best models: **Polynomial Regression** and **MLP NN Regression**.
+## Final Summary
+- Task 1: Successfully collected raw IMU data and performed analysis + feature extraction.
+- Task 2: Collected smooth IMU data and compared regression models for roll estimation.
+- Ground truth was evaluated using device fusion roll.
+- Best algorithms: **Polynomial Regression** and **MLP NN Regression** (R2 = 0.9998).
