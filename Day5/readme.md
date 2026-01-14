@@ -91,18 +91,20 @@ The analysis is useful because:
 3. IMU signals are saved as smooth dataset CSV (e.g., `imu_smooth.csv`).
 
 ### 2) What does the program do? (IMU_SD_ST_AGEQ.ino)
-This code records IMU signals at a fixed rate and outputs a stable dataset for roll estimation:
-- IMU sampling at constant rate (e.g., 100 Hz)
-- smoothing / noise suppression
-- preparation for roll estimation using accel + gyro fusion signals
-- produces smooth dataset suitable for regression modeling
+This code records IMU signals at a fixed rate and generates a stable dataset for roll estimation:
+- samples accelerometer + gyroscope signals at a constant rate (e.g., 100 Hz)
+- applies smoothing / noise suppression to reduce high-frequency noise
+- runs **Madgwick AHRS (sensor fusion)** to estimate roll/pitch/yaw in real time
+- saves both smooth IMU signals and fused orientation outputs into a CSV file (e.g., imu_smooth.csv)
+
+This produces stable motion + orientation data suitable for regression modeling.
 
 ### 3) Ground-truth evaluation (How is ground-truth evaluated?)
-In this experiment, the **ground-truth (pseudo ground truth)** roll angle was obtained from the **on-board device fusion output (Madgwick / AHRS)**.
-This fusion combines accelerometer + gyroscope to compute device orientation.
+In this experiment, the ground-truth roll angle was obtained from the **on-board device fusion output (Madgwick / AHRS)**.
+This fusion combines accelerometer + gyroscope signals and provides a stable roll estimate, which is used as the reference ground truth in this task.
 
 Therefore:
-- **Ground Truth (pseudo GT):** roll from device fusion
+- **Ground Truth (GT):** roll angle from device fusion (Madgwick/AHRS)
 - **Prediction:** roll estimated by regression models using IMU data/features
 
 ### 4) What is R2 metric?
@@ -112,7 +114,7 @@ R2 (coefficient of determination) measures regression prediction quality.
 - **R2 = 0.0:** no explanatory power
 - **R2 < 0:** worse than predicting the mean
 
-In this task, R2 is used to compare roll estimation accuracy against the ground truth (pseudo ground truth).
+In this task, R2 is used to compare roll estimation accuracy against the ground truth (device fusion roll).
 
 ### 5) Regression algorithms used (description)
 
@@ -151,15 +153,21 @@ In this task, R2 is used to compare roll estimation accuracy against the ground 
 | SVM Regression | 0.9997 |
 | MLP NN Regression | 0.9998 |
 
+**Discussion**
+- Polynomial Regression / SVM / MLP achieved near-perfect R2 because roll is strongly correlated with gravity direction in slow-motion conditions.
+- Decision Tree showed the lowest R2 since tree-based models may create non-smooth predictions and can overfit small variations in the dataset.
+- Random Forest improved over Decision Tree by averaging multiple trees, leading to better generalization and higher accuracy.
+
 ### 7) Which algorithm is the best?
-The best performance (highest R2) was achieved by:
+The best regression performance (highest R2) was achieved by:
 - **Non-linear (Polynomial) Regression: R2 = 0.9998**
 - **MLP Neural Network Regression: R2 = 0.9998**
 
-Both methods match the ground truth (pseudo ground truth) almost perfectly.
+Both models match the ground truth almost perfectly in this slow-motion experiment.
 
-**Conclusion:** For smooth roll estimation under slow-motion conditions, Polynomial Regression and MLP NN produce the best prediction accuracy.
-
+**Final Conclusion**
+- For this controlled slow-motion roll dataset, **Polynomial Regression and MLP NN** produced the best regression accuracy.
+- In real-world usage, however, **sensor fusion (Madgwick / complementary fusion)** remains the most reliable method because it avoids gyro drift and reduces accelerometer noise.
 
 ## Final Summary
 - Task 1: Successfully collected raw IMU data and performed analysis + feature extraction.
