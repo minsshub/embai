@@ -73,6 +73,7 @@ The analysis is useful because:
 
 **Conclusion:** Feature extraction is essential to compress raw sensor time-series into meaningful numerical descriptors for learning algorithms.
 
+
 ---
 
 
