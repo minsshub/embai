@@ -16,7 +16,6 @@
 - Gyroscope: `gx, gy, gz` (deg/s)
 - Timestamp (ms)
 
----
 
 ## 2) Why perform smoothing/filtering of raw IMU data?
 Raw IMU data is not directly suitable for ML because it contains:
@@ -31,7 +30,6 @@ Therefore smoothing/filtering is required to:
 - extract meaningful motion-related patterns
 - improve reliability of ML features
 
----
 
 ## 3) What is performed in feature extraction?
 **Program used:** `m5imu_data_analysis.py`
@@ -65,7 +63,6 @@ df = df.dropna(subset=['Timestamp'])
 - **Gravity Removal (High-pass filter)**
   - isolates dynamic acceleration by removing gravity component
 
----
 
 ## 4) Comment on the analysis performed (Use and Need)
 The analysis is useful because:
