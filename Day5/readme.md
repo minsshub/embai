@@ -43,6 +43,7 @@ This program loads raw IMU data and produces both:
 ### (Preprocessing) Timestamp cleaning
 While loading the raw IMU log, some values in the `Timestamp` column were stored as strings or contained invalid entries, which caused errors during plotting and time-based feature extraction.
 To fix this, timestamps were converted into numeric format and invalid rows were removed.
+This preprocessing ensures a valid time axis for plotting and prevents errors in window-based feature extraction.
 
 ```python
 df['Timestamp'] = pd.to_numeric(df['Timestamp'], errors='coerce')
@@ -77,6 +78,7 @@ The analysis is useful because:
 
 ---
 
+
 ## Task 2 – Smooth IMU Data Collection & Roll Estimation
 
 ### 1) Process of collecting smooth IMU data
@@ -98,11 +100,11 @@ This code records IMU signals at a fixed rate and outputs a stable dataset for r
 - produces smooth dataset suitable for regression modeling
 
 ### 3) Ground-truth evaluation (How is ground-truth evaluated?)
-Ground-truth roll angle is obtained from **device fusion output** (on-board sensor fusion algorithm).
-This fusion uses accelerometer + gyroscope to compute device orientation.
+In this experiment, the **ground-truth (pseudo ground truth)** roll angle was obtained from the **on-board device fusion output (Madgwick / AHRS)**.
+This fusion combines accelerometer + gyroscope to compute device orientation.
 
 Therefore:
-- **Ground Truth (GT):** roll from device fusion
+- **Ground Truth (pseudo GT):** roll from device fusion
 - **Prediction:** roll estimated by regression models using IMU data/features
 
 ### 4) What is R2 metric?
@@ -112,7 +114,7 @@ R2 (coefficient of determination) measures regression prediction quality.
 - **R2 = 0.0:** no explanatory power
 - **R2 < 0:** worse than predicting the mean
 
-In this task, R2 is used to compare roll estimation accuracy against ground truth.
+In this task, R2 is used to compare roll estimation accuracy against the ground truth (pseudo ground truth).
 
 ### 5) Regression algorithms used (description)
 
@@ -150,14 +152,13 @@ In this task, R2 is used to compare roll estimation accuracy against ground trut
 | Random Forest | 0.9995 |
 | SVM Regression | 0.9997 |
 | MLP NN Regression | 0.9998 |
-| Analytic / Fusion reference | 0.9998 |
 
 ### 7) Which algorithm is the best?
 The best performance (highest R2) was achieved by:
 - **Non-linear (Polynomial) Regression: R2 = 0.9998**
 - **MLP Neural Network Regression: R2 = 0.9998**
 
-Both methods match the ground-truth almost perfectly.
+Both methods match the ground truth (pseudo ground truth) almost perfectly.
 
 **Conclusion:** For smooth roll estimation under slow-motion conditions, Polynomial Regression and MLP NN produce the best prediction accuracy.
 
@@ -165,5 +166,5 @@ Both methods match the ground-truth almost perfectly.
 ## Final Summary
 - Task 1: Successfully collected raw IMU data and performed analysis + feature extraction.
 - Task 2: Collected smooth IMU data and compared regression models for roll estimation.
-- Ground truth was evaluated using device fusion roll.
+- Ground truth (pseudo ground truth) was defined using the device fusion roll output.
 - Best algorithms: **Polynomial Regression** and **MLP NN Regression** (R2 = 0.9998).
