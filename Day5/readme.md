@@ -172,5 +172,5 @@ Both models match the ground truth almost perfectly in this slow-motion experime
 ## Final Summary
 - Task 1: Successfully collected raw IMU data and performed analysis + feature extraction.
 - Task 2: Collected smooth IMU data and compared regression models for roll estimation.
-- Ground truth (pseudo ground truth) was defined using the device fusion roll output.
+- Ground truth was defined using the device fusion roll output (Madgwick/AHRS).
 - Best algorithms: **Polynomial Regression** and **MLP NN Regression** (R2 = 0.9998).
